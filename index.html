@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickKeys - Modern Typing Speed Game</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-logo">
+                <h1 class="glowing-text">QuickKeys</h1>
+                <div class="loading-spinner"></div>
+            </div>
+            <p class="loading-text">Loading your typing adventure...</p>
+        </div>
+    </div>
+
+    <!-- Main Navigation -->
+    <nav class="main-nav" id="main-nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2 class="logo-text">QuickKeys</h2>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-btn" data-screen="home"><i class="fas fa-home"></i> Home</button>
+                <button class="nav-btn" data-screen="profile"><i class="fas fa-user"></i> Profile</button>
+                <button class="nav-btn" data-screen="leaderboard"><i class="fas fa-trophy"></i> Leaderboard</button>
+                <button class="theme-toggle" id="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="sound-toggle" id="sound-toggle">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                <button class="music-toggle" id="music-toggle" title="Toggle Background Music">
+                    <i class="fas fa-music" id="music-icon"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Home/Welcome Screen -->
+    <div class="screen active" id="home-screen">
+        <div class="home-container">
+            <div class="hero-section">
+                <div class="logo-animation">
+                    <h1 class="main-title glowing-text">QuickKeys</h1>
+                    <p class="subtitle">Test your typing speed and accuracy</p>
+                    <div class="keyboard-animation">
+                        <div class="key" style="--delay: 0s">Q</div>
+                        <div class="key" style="--delay: 0.1s">U</div>
+                        <div class="key" style="--delay: 0.2s">I</div>
+                        <div class="key" style="--delay: 0.3s">C</div>
+                        <div class="key" style="--delay: 0.4s">K</div>
+                    </div>
+                </div>
+                <div class="menu-buttons">
+                    <button class="menu-btn primary" data-screen="single-player">
+                        <i class="fas fa-user"></i>
+                        <span>Single Player</span>
+                        <div class="btn-glow"></div>
+                    </button>
+                    <button class="menu-btn secondary" data-screen="multiplayer">
+                        <i class="fas fa-users"></i>
+                        <span>Multiplayer</span>
+                        <div class="btn-glow"></div>
+                    </button>
+                    <button class="menu-btn tertiary" data-screen="custom">
+                        <i class="fas fa-cog"></i>
+                        <span>Custom Mode</span>
+                        <div class="btn-glow"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="background-animation">
+            <div class="floating-keys"></div>
+        </div>
+    </div>
+
+    <!-- Single Player Screen -->
+    <div class="screen" id="single-player-screen">
+        <div class="game-container">
+            <div class="game-header">
+                <button class="back-btn" data-screen="home">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <div class="game-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">WPM</span>
+                        <span class="stat-value" id="wpm">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Accuracy</span>
+                        <span class="stat-value" id="accuracy">100%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Errors</span>
+                        <span class="stat-value" id="errors">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Time</span>
+                        <span class="stat-value" id="time-elapsed">0s</span>
+                    </div>
+                </div>
+                <div class="timer-container">
+                    <div class="timer-circle">
+                        <span id="timer">60</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="difficulty-selector">
+                <button class="difficulty-btn active" data-difficulty="easy">Easy</button>
+                <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+                <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+            </div>
+
+            <div class="text-container">
+                <div class="text-display-header">
+                    <span class="text-label">Typing Challenge</span>
+                    <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                        <span class="indicator-dot"></span>
+                        <span class="indicator-text">Typing...</span>
+                    </div>
+                </div>
+                <div class="text-display" id="text-display">
+                    Select difficulty and click "Start Game" to begin your typing challenge!
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                    <div class="progress-text">
+                        <span id="progress-percent">0%</span>
+                        <span id="characters-remaining"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <textarea 
+                    id="typing-input" 
+                    class="typing-input" 
+                    placeholder="Start typing here..."
+                    disabled
+                ></textarea>
+            </div>
+
+            <div class="game-controls">
+                <button class="control-btn start-btn" id="start-btn">
+                    <i class="fas fa-play"></i> Start Game
+                </button>
+                <button class="control-btn submit-btn" id="submit-btn" style="display: none;">
+                    <i class="fas fa-check"></i> Submit
+                </button>
+                <button class="control-btn reset-btn" id="retry-btn">
+                    <i class="fas fa-redo"></i> Retry
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Multiplayer Screen -->
+    <div class="screen" id="multiplayer-screen">
+        <div class="multiplayer-container">
+            <div class="multiplayer-header">
+                <button class="back-btn" data-screen="home">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <h2 class="screen-title">Multiplayer Race</h2>
+            </div>
+
+            <div class="multiplayer-lobby" id="multiplayer-lobby">
+                <div class="lobby-content">
+                    <div class="find-match-section">
+                        <button class="find-match-btn" id="find-match-btn">
+                            <i class="fas fa-search"></i>
+                            Find a Match
+                        </button>
+                        <p class="lobby-text">Click to find an opponent and start racing!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="multiplayer-game" id="multiplayer-game" style="display: none;">
+                <!-- Match Setup Overlay -->
+                <div class="match-setup" style="display: none;">
+                    <!-- Content will be dynamically inserted -->
+                </div>
+                
+                <!-- Countdown -->
+                <div class="countdown" id="countdown" style="display: none;">
+                    <span class="countdown-number">3</span>
+                </div>
+                
+                <!-- Race Header -->
+                <div class="race-header">
+                    <h2>Multiplayer Race</h2>
+                    <div class="room-info">
+                        <span>Room: <span id="room-id">Waiting...</span></span>
+                        <span>Players: 2/2</span>
+                    </div>
+                </div>
+                
+                <!-- Players Container -->
+                <div class="players-container">
+                    <!-- Player 1 Panel -->
+                    <div class="player-panel" id="player1-panel">
+                        <div class="player-info">
+                            <div class="player-avatar">👤</div>
+                            <div class="player-details">
+                                <h3 id="player1-name">You</h3>
+                                <div class="player-stats">
+                                    <!-- Stats will be dynamically inserted -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="live-stats">
+                            <div class="stat-display">
+                                <span class="stat-value" id="player1-wpm">0 WPM</span>
+                                <span class="stat-label">Speed</span>
+                            </div>
+                            <div class="stat-display">
+                                <span class="stat-value" id="player1-accuracy">100%</span>
+                                <span class="stat-label">Accuracy</span>
+                            </div>
+                            <div class="stat-display">
+                                <span class="stat-value" id="player1-progress">0%</span>
+                                <span class="stat-label">Progress</span>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-container">
+                            <div class="progress-label">
+                                <span>Progress</span>
+                                <span id="player1-progress-text">0%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Player 2 Panel -->
+                    <div class="player-panel" id="player2-panel">
+                        <div class="player-info">
+                            <div class="player-avatar">🤖</div>
+                            <div class="player-details">
+                                <h3 id="player2-name">Opponent</h3>
+                                <div class="player-stats">
+                                    <!-- Stats will be dynamically inserted -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="live-stats">
+                            <div class="stat-display">
+                                <span class="stat-value" id="player2-wpm">0 WPM</span>
+                                <span class="stat-label">Speed</span>
+                            </div>
+                            <div class="stat-display">
+                                <span class="stat-value" id="player2-accuracy">100%</span>
+                                <span class="stat-label">Accuracy</span>
+                            </div>
+                            <div class="stat-display">
+                                <span class="stat-value" id="player2-progress">0%</span>
+                                <span class="stat-label">Progress</span>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-container">
+                            <div class="progress-label">
+                                <span>Progress</span>
+                                <span id="player2-progress-text">0%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Race Area -->
+                <div class="race-area">
+                    <div class="race-text" id="race-text">Race text will appear here when match starts...</div>
+                    
+                    <div class="race-input-container">
+                        <textarea 
+                            id="race-input" 
+                            class="race-input"
+                            placeholder="Click 'Find a Match' to start racing!"
+                            disabled
+                        ></textarea>
+                    </div>
+                </div>
+                
+                <!-- Race Controls -->
+                <div class="race-controls">
+                    <button class="btn btn-secondary" id="back-to-lobby-btn">
+                        <i class="fas fa-arrow-left"></i> Back to Lobby
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Mode Screen -->
+    <div class="screen" id="custom-screen">
+        <div class="custom-container">
+            <div class="custom-header">
+                <button class="back-btn" data-screen="home">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <h2 class="screen-title">Custom Mode</h2>
+            </div>
+
+            <div class="custom-content">
+                <div class="custom-input-section">
+                    <label for="custom-text" class="section-title">Your Custom Text</label>
+                    <textarea 
+                        id="custom-text" 
+                        class="custom-textarea"
+                        placeholder="Enter your custom text here for typing practice..."
+                    ></textarea>
+                </div>
+
+                <div class="custom-settings">
+                    <div class="setting-group">
+                        <label class="setting-label">Time Limit</label>
+                        <select class="setting-select" id="custom-time">
+                            <option value="30">30 seconds</option>
+                            <option value="60" selected>60 seconds</option>
+                            <option value="120">2 minutes</option>
+                            <option value="300">5 minutes</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <label class="setting-label">Difficulty</label>
+                        <select class="setting-select" id="custom-difficulty">
+                            <option value="easy">Easy</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="custom-actions">
+                    <div class="primary-actions">
+                        <button class="custom-btn play-now" id="play-now">
+                            <i class="fas fa-play"></i> Play Now
+                        </button>
+                        <button class="custom-btn save-challenge" id="save-challenge">
+                            <i class="fas fa-save"></i> Save Challenge
+                        </button>
+                    </div>
+                    <div class="secondary-actions">
+                        <button class="custom-btn share-custom" id="share-custom">
+                            <i class="fas fa-share"></i> Share Challenge
+                        </button>
+                        <button class="custom-btn load-saved" id="load-saved">
+                            <i class="fas fa-folder-open"></i> Load Saved
+                        </button>
+                    </div>
+                </div>
+
+                <div class="saved-challenges">
+                    <h3 class="section-title">Saved Challenges</h3>
+                    <div class="challenges-list" id="challenges-list">
+                        <div class="challenge-item">
+                            <div class="challenge-info">
+                                <span class="challenge-name">Sample Challenge</span>
+                                <span class="challenge-meta">Easy • 60s</span>
+                            </div>
+                            <div class="challenge-actions">
+                                <button class="challenge-btn play"><i class="fas fa-play"></i></button>
+                                <button class="challenge-btn delete"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Screen -->
+    <div class="screen" id="leaderboard-screen">
+        <div class="leaderboard-container">
+            <div class="leaderboard-header">
+                <button class="back-btn" data-screen="home">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <h2 class="screen-title">Leaderboard</h2>
+            </div>
+
+            <div class="leaderboard-filters">
+                <button class="filter-btn active" data-filter="daily">Daily</button>
+                <button class="filter-btn" data-filter="weekly">Weekly</button>
+                <button class="filter-btn" data-filter="all-time">All Time</button>
+            </div>
+
+            <div class="leaderboard-content">
+                <div class="leaderboard-table">
+                    <div class="table-header">
+                        <div class="col rank">Rank</div>
+                        <div class="col player">Player</div>
+                        <div class="col wpm">WPM</div>
+                        <div class="col accuracy">Accuracy</div>
+                        <div class="col date">Date</div>
+                    </div>
+                    <div class="table-body" id="leaderboard-body">
+                        <div class="table-row gold">
+                            <div class="col rank">
+                                <i class="fas fa-trophy gold-trophy"></i>
+                                <span>1</span>
+                            </div>
+                            <div class="col player">
+                                <div class="player-avatar small">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <span>SpeedTyper99</span>
+                            </div>
+                            <div class="col wpm">124</div>
+                            <div class="col accuracy">98.5%</div>
+                            <div class="col date">Today</div>
+                        </div>
+                        <div class="table-row silver">
+                            <div class="col rank">
+                                <i class="fas fa-trophy silver-trophy"></i>
+                                <span>2</span>
+                            </div>
+                            <div class="col player">
+                                <div class="player-avatar small">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <span>KeyboardMaster</span>
+                            </div>
+                            <div class="col wpm">118</div>
+                            <div class="col accuracy">97.2%</div>
+                            <div class="col date">Yesterday</div>
+                        </div>
+                        <div class="table-row bronze">
+                            <div class="col rank">
+                                <i class="fas fa-trophy bronze-trophy"></i>
+                                <span>3</span>
+                            </div>
+                            <div class="col player">
+                                <div class="player-avatar small">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <span>FastFingers</span>
+                            </div>
+                            <div class="col wpm">115</div>
+                            <div class="col accuracy">96.8%</div>
+                            <div class="col date">2 days ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Screen -->
+    <div class="screen" id="profile-screen">
+        <div class="profile-container">
+            <div class="profile-header">
+                <button class="back-btn" data-screen="home">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <h2 class="screen-title">Profile</h2>
+                <button class="edit-profile-btn" id="edit-profile-btn">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+            </div>
+
+            <div class="profile-content">
+                <div class="profile-info">
+                    <div class="profile-avatar-section">
+                        <div class="profile-avatar large">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <h3 class="profile-name" id="profile-name">Your Username</h3>
+                        <p class="profile-bio" id="profile-bio">Aspiring speed typist</p>
+                    </div>
+
+                    <div class="profile-badges">
+                        <h4 class="section-title">Achievements</h4>
+                        <div class="badges-grid">
+                            <div class="badge earned">
+                                <i class="fas fa-fire"></i>
+                                <span class="badge-name">Speed Demon</span>
+                            </div>
+                            <div class="badge earned">
+                                <i class="fas fa-target"></i>
+                                <span class="badge-name">Accuracy Master</span>
+                            </div>
+                            <div class="badge">
+                                <i class="fas fa-crown"></i>
+                                <span class="badge-name">Typing King</span>
+                            </div>
+                            <div class="badge">
+                                <i class="fas fa-medal"></i>
+                                <span class="badge-name">Marathon Typer</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-stats">
+                    <h4 class="section-title">Statistics</h4>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-tachometer-alt"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="avg-wpm">87</span>
+                                <span class="stat-label">Average WPM</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="best-accuracy">98.5%</span>
+                                <span class="stat-label">Best Accuracy</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-gamepad"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="total-games">142</span>
+                                <span class="stat-label">Total Games</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="total-time">24h</span>
+                                <span class="stat-label">Time Played</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div class="modal-overlay" id="results-modal">
+        <div class="modal-content results-modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Game Complete!</h3>
+                <button class="modal-close" id="close-results">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="results-summary">
+                    <div class="result-item main">
+                        <span class="result-label">Words Per Minute</span>
+                        <span class="result-value" id="final-wpm">0</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Accuracy</span>
+                        <span class="result-value" id="final-accuracy">0%</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Errors</span>
+                        <span class="result-value" id="final-errors">0</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Time</span>
+                        <span class="result-value" id="final-time">0s</span>
+                    </div>
+                </div>
+                <div class="results-actions">
+                    <button class="result-btn retry" id="retry-btn">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
+                    <button class="result-btn home" id="home-btn">
+                        <i class="fas fa-home"></i> Home
+                    </button>
+                    <button class="result-btn share" id="share-btn">
+                        <i class="fas fa-share"></i> Share Score
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="modal-overlay" style="display: none;"></div>
+    
+    <!-- Result Modal -->
+    <div id="result-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <!-- Content will be dynamically inserted -->
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="js/background-music.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/multiplayer.js"></script>
+    <script src="js/custom.js"></script>
+    <script src="js/ui.js"></script>
+</body>
+</html>

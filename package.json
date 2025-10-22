@@ -1,0 +1,50 @@
+{
+  "name": "quickkeys",
+  "version": "1.0.0",
+  "description": "A modern, web-based typing speed game with real-time multiplayer functionality and stunning UI/UX",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve . -l 3000",
+    "dev": "npx serve . -l 8000",
+    "build": "echo 'No build process required for vanilla JS project'",
+    "server": "node server.js",
+    "test": "echo 'No tests configured yet'"
+  },
+  "keywords": [
+    "typing",
+    "game",
+    "speed",
+    "wpm",
+    "multiplayer",
+    "web",
+    "javascript",
+    "html5",
+    "css3",
+    "socketio"
+  ],
+  "author": "QuickKeys Development Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/quickkeys.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/quickkeys/issues"
+  },
+  "homepage": "https://github.com/yourusername/quickkeys#readme",
+  "devDependencies": {
+    "serve": "^14.2.1"
+  },
+  "optionalDependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

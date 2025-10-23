@@ -59,6 +59,10 @@ class QuickKeysApp {
     }
 
     initializeGameComponents() {
+        // Initialize single-player game
+        this.game = new TypingGame(this);
+        console.log('Main: TypingGame initialized:', this.game);
+        
         // Initialize multiplayer game
         this.multiplayer = new MultiplayerGame(this);
     }
@@ -217,23 +221,45 @@ class QuickKeysApp {
     }
 
     initializeSinglePlayer() {
+        console.log('Main: initializeSinglePlayer called');
+        
+        // Check if we're in the middle of starting a custom game
+        const isCustomGameStarting = this.isStartingCustomGame;
+        const hasActiveCustomGame = this.activeCustomText && this.activeCustomSettings;
+        console.log('Main: isStartingCustomGame flag:', isCustomGameStarting);
+        console.log('Main: hasActiveCustomGame:', hasActiveCustomGame);
+        
         this.resetGameStats();
         this.updateGameStatsDisplay();
         this.loadDifficultySetting();
         
         const textDisplay = document.getElementById('text-display');
-        textDisplay.textContent = 'Select your difficulty level and click "Start Game" to begin your typing challenge!';
-        
         const typingInput = document.getElementById('typing-input');
+        const startBtn = document.getElementById('start-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        if (isCustomGameStarting || hasActiveCustomGame) {
+            console.log('Main: Setting up for custom game');
+            // Don't reset text display for custom games
+            if (hasActiveCustomGame) {
+                textDisplay.textContent = 'Custom text loaded. Click "Start Game" to begin your custom typing challenge!';
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Start Custom Game';
+            } else {
+                console.log('Main: Skipping text display reset because custom game is starting');
+            }
+        } else {
+            // Normal single player initialization
+            textDisplay.textContent = 'Select your difficulty level and click "Start Game" to begin your typing challenge!';
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Start Game';
+        }
+        
+        // Reset input and UI elements
         typingInput.value = '';
         typingInput.disabled = true;
         typingInput.placeholder = 'Your typing will appear here...';
         
-        const startBtn = document.getElementById('start-btn');
-        startBtn.innerHTML = '<i class="fas fa-play"></i> Start Game';
         startBtn.disabled = false;
         
-        const submitBtn = document.getElementById('submit-btn');
         if (submitBtn) {
             submitBtn.style.display = 'none';
         }
@@ -461,7 +487,25 @@ class QuickKeysApp {
         // Game controls
         document.addEventListener('click', (e) => {
             if (e.target.id === 'start-btn' || e.target.parentElement?.id === 'start-btn') {
-                this.startGame();
+                // Check if we have active custom game data
+                if (this.activeCustomText && this.activeCustomSettings) {
+                    console.log('Main: Start button clicked for custom game');
+                    // Start the custom game with stored text and settings
+                    if (this.game) {
+                        this.game.startCustomGame(this.activeCustomText, this.activeCustomSettings);
+                    }
+                } else if (this.game && this.game.isCustomGame) {
+                    console.log('Main: Start button clicked during active custom game');
+                    // Custom game is already started, this button should stop the game
+                    if (this.game.gameStarted) {
+                        this.game.endGame('stopped');
+                    }
+                } else {
+                    console.log('Main: Start button clicked - starting regular game');
+                    if (this.game) {
+                        this.game.startGame();
+                    }
+                }
             } else if (e.target.id === 'submit-btn' || e.target.parentElement?.id === 'submit-btn') {
                 this.submitGame();
             } else if (e.target.id === 'retry-btn' || e.target.parentElement?.id === 'retry-btn') {

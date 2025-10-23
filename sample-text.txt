@@ -1,0 +1,19 @@
+Sample Text for Custom Mode Testing
+========================================
+
+This is a sample text file that demonstrates the new file upload feature in QuickKeys Custom Mode.
+
+You can upload this file and practice typing with it. The text contains various words and punctuation marks to provide a good typing practice experience.
+
+Features you can test:
+- Upload this .txt file using the file upload button
+- Set a custom timer (try different values like 45 seconds, 90 seconds, or 10 minutes)
+- Choose different difficulty levels
+- Save this as a custom challenge
+- Share the challenge with others
+
+The quick brown fox jumps over the lazy dog. This sentence contains every letter of the alphabet at least once, making it perfect for typing practice.
+
+Programming is not just about writing code; it's about solving problems, thinking logically, and creating solutions that make life easier for people around the world.
+
+Happy typing! Remember to maintain good posture and take regular breaks during your practice sessions.

@@ -5,6 +5,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+const customModeRoutes = require('./routes/custom-mode');
 
 const app = express();
 const server = http.createServer(app);
@@ -14,6 +15,13 @@ const io = socketIo(server, {
         methods: ["GET", "POST"]
     }
 });
+
+// Middleware
+app.use(express.json({ limit: '10mb' })); // Support larger text files
+app.use(express.urlencoded({ extended: true }));
+
+// API Routes
+app.use('/api/custom-mode', customModeRoutes);
 
 // Serve static files
 app.use(express.static(path.join(__dirname)));

@@ -89,6 +89,13 @@ class TypingGame {
     }
 
     startCustomGame(customText, customSettings) {
+        console.log('Game: Starting custom game with:', { text: customText?.length + ' chars', settings: customSettings });
+        
+        if (!customText || customText.trim().length < 20) {
+            console.error('Game: Custom text is too short or empty');
+            return false;
+        }
+        
         // Store original settings
         this.originalSettings = { ...this.app.settings };
         
@@ -98,7 +105,7 @@ class TypingGame {
         }
         
         // Set custom text BEFORE resetting
-        this.customText = customText;
+        this.customText = customText.trim();
         this.isCustomGame = true;
         
         // Reset game state but preserve custom text
@@ -113,7 +120,7 @@ class TypingGame {
         
         // Update UI
         const startBtn = document.getElementById('start-btn');
-        startBtn.innerHTML = '<i class="fas fa-stop"></i> Stop Game';
+        startBtn.innerHTML = '<i class="fas fa-stop"></i> Stop Custom Game';
         startBtn.style.background = 'var(--error)';
         startBtn.style.borderColor = 'var(--error)';
         
@@ -140,6 +147,9 @@ class TypingGame {
         this.showCustomModeIndicator();
         
         this.app.playSound('start');
+        
+        console.log('Game: Custom game started successfully');
+        return true;
     }
 
     resetCustomGame() {
@@ -255,14 +265,26 @@ class TypingGame {
     }
 
     setupCustomGameText() {
-        console.log('Setting up custom game text:', this.customText);
+        console.log('Game: Setting up custom game text:', this.customText?.substring(0, 50) + '...');
+        
+        if (!this.customText) {
+            console.error('Game: No custom text available!');
+            return false;
+        }
+        
         this.currentText = this.customText;
         
         const textDisplay = document.getElementById('text-display');
-        textDisplay.innerHTML = this.formatTextDisplay();
+        if (textDisplay) {
+            textDisplay.innerHTML = this.formatTextDisplay();
+            console.log('Game: Text display updated with custom text (' + this.currentText.length + ' chars)');
+        } else {
+            console.error('Game: Text display element not found!');
+            return false;
+        }
         
         this.app.gameStats.totalCharacters = this.currentText.length;
-        console.log('Text display updated with custom text');
+        return true;
     }
 
     showCustomModeIndicator() {
@@ -271,6 +293,85 @@ class TypingGame {
         if (gameHeader) {
             gameHeader.innerHTML = 'Single Player Mode <span class="custom-indicator">(Custom Text)</span>';
         }
+    }
+
+    clearCustomGame() {
+        console.log('Game: Clearing custom game state');
+        this.isCustomGame = false;
+        this.customText = null;
+        
+        // Clear from main app
+        if (this.app) {
+            this.app.activeCustomText = null;
+            this.app.activeCustomSettings = null;
+        }
+        
+        // Clear from localStorage
+        localStorage.removeItem('currentCustomGame');
+        
+        // Restore original game header
+        const gameHeader = document.querySelector('.game-header h2');
+        if (gameHeader) {
+            gameHeader.innerHTML = 'Single Player Mode';
+        }
+    }
+
+    storeCustomGameResult(reason) {
+        const result = {
+            timestamp: Date.now(),
+            wpm: this.app.gameStats.wpm,
+            accuracy: this.app.gameStats.accuracy,
+            errors: this.app.gameStats.errors,
+            timeElapsed: this.app.gameStats.timeElapsed,
+            reason: reason,
+            textLength: this.currentText.length,
+            isCustomGame: true
+        };
+        
+        // Store in localStorage for now
+        const customResults = JSON.parse(localStorage.getItem('customGameResults') || '[]');
+        customResults.push(result);
+        
+        // Keep only last 50 results
+        if (customResults.length > 50) {
+            customResults.splice(0, customResults.length - 50);
+        }
+        
+        localStorage.setItem('customGameResults', JSON.stringify(customResults));
+        console.log('Game: Stored custom game result:', result);
+    }
+
+    showCustomGameEndOptions() {
+        // Add custom buttons to the results area
+        setTimeout(() => {
+            const resultsArea = document.querySelector('.game-results');
+            if (resultsArea && this.customText) {
+                const customOptions = document.createElement('div');
+                customOptions.className = 'custom-game-options';
+                customOptions.innerHTML = `
+                    <div class="custom-options-buttons">
+                        <button id="play-again-custom" class="btn btn-primary">
+                            <i class="fas fa-redo"></i> Play Again
+                        </button>
+                        <button id="return-to-custom" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Custom Mode
+                        </button>
+                    </div>
+                `;
+                
+                resultsArea.appendChild(customOptions);
+                
+                // Add event listeners
+                document.getElementById('play-again-custom')?.addEventListener('click', () => {
+                    this.startCustomGame(this.customText, this.app.settings);
+                });
+                
+                document.getElementById('return-to-custom')?.addEventListener('click', () => {
+                    this.clearCustomGame();
+                    this.app.showScreen('custom-mode');
+                });
+            }
+        }, 100);
     }
 
     formatTextDisplay() {
@@ -460,21 +561,27 @@ class TypingGame {
         // Hide live typing indicator
         this.showLiveTypingIndicator(false);
         
+        // Handle custom game cleanup
+        if (this.isCustomGame) {
+            // Store custom game result if needed
+            if (reason === 'completed' || reason === 'submitted') {
+                this.storeCustomGameResult(reason);
+            }
+            
+            // Update start button for custom game
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Start Custom Game';
+            
+            // Show option to play again or return to custom mode
+            this.showCustomGameEndOptions();
+        }
+        
         // Restore original settings if this was a custom game
         if (this.originalSettings) {
             this.app.settings = { ...this.originalSettings };
             this.originalSettings = null;
-            this.customText = null;
-            this.isCustomGame = false;
-            
-            // Remove custom mode indicator
-            const gameHeader = document.querySelector('.game-header h2');
-            if (gameHeader) {
-                gameHeader.innerHTML = 'Single Player Mode';
-            }
         }
         
-        // Store result (simulate Firebase storage)
+        // Store result in Firebase if it's a custom game
         this.storeGameResult(reason);
         
         // Show results modal
@@ -534,27 +641,43 @@ class TypingGame {
         }
     }
 
-    storeGameResult(reason) {
-        // Simulate storing result in Firebase
+    async storeGameResult(reason) {
         const result = {
-            userId: this.app.user.id || 'anonymous',
-            username: this.app.user.name,
             wpm: this.app.gameStats.wpm,
             accuracy: this.app.gameStats.accuracy,
             errors: this.app.gameStats.errors,
             timeElapsed: this.app.gameStats.timeElapsed || this.app.gameStats.timeTaken,
             difficulty: this.app.settings.difficulty,
-            textLength: this.currentText.length,
-            completionReason: reason,
-            timestamp: new Date().toISOString(),
-            textSample: this.currentText.substring(0, 50) + '...'
+            completionStatus: reason,
+            textLength: this.currentText.length
         };
         
-        // Store in localStorage as simulation
+        // Store in localStorage for regular games
         const gameHistory = JSON.parse(localStorage.getItem('quickkeys-game-history') || '[]');
-        gameHistory.unshift(result); // Add to beginning
+        const historyResult = {
+            userId: this.app.user.id || 'anonymous',
+            username: this.app.user.name,
+            ...result,
+            timestamp: new Date().toISOString(),
+            textSample: this.currentText.substring(0, 50) + '...',
+            isCustomGame: this.isCustomGame || false
+        };
+        
+        gameHistory.unshift(historyResult);
         gameHistory.splice(50); // Keep only last 50 games
         localStorage.setItem('quickkeys-game-history', JSON.stringify(gameHistory));
+        
+        // Store in Firebase if it's a custom game
+        if (this.isCustomGame && this.app.currentCustomChallenge && window.firebaseAPI) {
+            try {
+                console.log('Storing custom game result in Firebase...');
+                await window.firebaseAPI.saveGameResult(this.app.currentCustomChallenge.id, result);
+                console.log('Custom game result saved to Firebase successfully');
+            } catch (error) {
+                console.error('Error saving custom game result to Firebase:', error);
+                // Don't show error to user, just log it
+            }
+        }
         
         console.log('Game result stored:', result);
     }

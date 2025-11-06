@@ -1,4 +1,4 @@
-// Enhanced Custom Mode with Firebase Integration
+
 class EnhancedCustomMode {
     constructor() {
         this.currentChallenge = null;

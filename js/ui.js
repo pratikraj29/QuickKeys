@@ -1,4 +1,4 @@
-// QuickKeys - UI Enhancement JavaScript
+
 
 class UIEnhancements {
     constructor(app) {
@@ -19,7 +19,7 @@ class UIEnhancements {
     }
 
     setupParticleSystem() {
-        // Create floating particles for background
+        
         this.createFloatingParticles();
         this.startParticleAnimation();
     }

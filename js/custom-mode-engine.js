@@ -1,12 +1,8 @@
-/**
- * Custom Mode Engine - Completely separate from Single Player Mode
- * Handles file upload, text input, timer settings, and custom typing games
- */
 
 class CustomModeEngine {
     constructor() {
         this.customText = null;
-        this.customTimer = 60; // Default 60 seconds
+        this.customTimer = 60; 
         this.customDifficulty = 'medium';
         this.gameActive = false;
         this.gameStarted = false;

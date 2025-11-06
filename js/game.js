@@ -87,7 +87,7 @@ class TypingGame {
         
         this.app.playSound('start');
     }
-
+type 
     startCustomGame(customText, customSettings) {
         console.log('Game: Starting custom game with:', { text: customText?.length + ' chars', settings: customSettings });
         

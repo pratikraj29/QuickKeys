@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- Loading Screen -->
+    
     <div id="loading-screen" class="loading-screen">
         <div class="loading-content">
             <div class="loading-logo">
@@ -30,7 +30,9 @@
             </div>
             <div class="nav-menu">
                 <button class="nav-btn" data-screen="home"><i class="fas fa-home"></i> Home</button>
-                <button class="nav-btn" data-screen="profile"><i class="fas fa-user"></i> Profile</button>
+                <a href="profile.html" class="nav-btn nav-link">
+                    <i class="fas fa-user"></i> Profile
+                </a>
                 <button class="nav-btn" data-screen="leaderboard"><i class="fas fa-trophy"></i> Leaderboard</button>
                 <button class="theme-toggle" id="theme-toggle">
                     <i class="fas fa-moon"></i>
@@ -41,12 +43,58 @@
                 <button class="music-toggle" id="music-toggle" title="Toggle Background Music">
                     <i class="fas fa-music" id="music-icon"></i>
                 </button>
+                <button class="help-toggle" id="help-toggle" title="Keyboard Shortcuts">
+                    <i class="fas fa-keyboard"></i>
+                </button>
+                <button class="logout-btn" id="logout-btn" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
             </div>
         </div>
     </nav>
 
     <!-- Home/Welcome Screen -->
     <div class="screen active" id="home-screen">
+        <!-- Hamburger Menu Button -->
+        <button class="hamburger-menu" id="hamburgerMenu">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Sidebar Menu -->
+        <div class="sidebar-menu" id="sidebarMenu">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-gamepad"></i> QuickKeys Menu</h3>
+                <button class="close-sidebar" id="closeSidebar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="profile.html" class="sidebar-item">
+                    <i class="fas fa-user-circle"></i>
+                    <span>My Profile</span>
+                </a>
+                <button class="sidebar-item" id="gameRulesBtn">
+                    <i class="fas fa-book"></i>
+                    <span>Game Rules</span>
+                </button>
+                <button class="sidebar-item" id="helpBtn">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Help</span>
+                </button>
+                <button class="sidebar-item" data-screen="leaderboard">
+                    <i class="fas fa-trophy"></i>
+                    <span>Leaderboard</span>
+                </button>
+                <button class="sidebar-item" id="settingsBtn">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
         <div class="home-container">
             <div class="hero-section">
                 <div class="logo-animation">
@@ -610,8 +658,65 @@
         </div>
     </div>
 
+    <!-- Keyboard Shortcuts Help Modal -->
+    <div class="modal-overlay" id="help-modal" style="display: none;">
+        <div class="modal-content help-modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">⌨️ Keyboard Shortcuts</h3>
+                <button class="modal-close" id="close-help">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcuts-list">
+                    <div class="shortcut-item">
+                        <kbd>ESC</kbd>
+                        <span>Return to Home / Close Modal</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Enter</kbd>
+                        <span>Start Game (on game screen)</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>R</kbd>
+                        <span>Retry Game (in results modal)</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>S</kbd>
+                        <span>Toggle Sound</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>T</kbd>
+                        <span>Toggle Theme</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Tab</kbd>
+                        <span>Navigate (disabled in game)</span>
+                    </div>
+                </div>
+                <div class="help-tip">
+                    <i class="fas fa-lightbulb"></i>
+                    <p>Tip: Focus and speed come with practice. Start with Easy difficulty and work your way up!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    
+    <!-- Authentication Guard - Must be first -->
+    <script type="module">
+        import { checkAuth } from './auth.js';
+        
+        // Check authentication on page load
+        checkAuth().then(isAuthenticated => {
+            if (!isAuthenticated) {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+    
     <script src="js/background-music.js"></script>
     <script src="js/firebase-api.js"></script>
     <script src="js/custom-mode-engine.js"></script>
@@ -621,5 +726,699 @@
     <!-- Removed enhanced-custom-mode.js - using custom-mode-engine.js instead -->
     <script src="js/custom.js"></script>
     <script src="js/ui.js"></script>
+    
+    <!-- Game Rules Modal -->
+    <div class="modal-popup" id="gameRulesModal">
+        <div class="modal-popup-content">
+            <div class="modal-popup-header">
+                <h3><i class="fas fa-book"></i> Game Rules</h3>
+                <button class="close-modal-popup" data-modal="gameRulesModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-popup-body">
+                <div class="rules-section">
+                    <h4><i class="fas fa-star"></i> How to Play</h4>
+                    <ol>
+                        <li>Choose your game mode: Single Player, Multiplayer, or Custom</li>
+                        <li>Select your difficulty level (Easy, Medium, or Hard)</li>
+                        <li>Click "Start Game" to begin</li>
+                        <li>Type the displayed text as quickly and accurately as possible</li>
+                        <li>Your WPM (Words Per Minute) and accuracy will be tracked in real-time</li>
+                    </ol>
+                </div>
+                <div class="rules-section">
+                    <h4><i class="fas fa-chart-line"></i> Scoring</h4>
+                    <ul>
+                        <li><strong>WPM:</strong> Calculated based on correct characters typed per minute</li>
+                        <li><strong>Accuracy:</strong> Percentage of correctly typed characters</li>
+                        <li><strong>Errors:</strong> Total number of mistakes made</li>
+                        <li><strong>Best scores are saved to your profile automatically</strong></li>
+                    </ul>
+                </div>
+                <div class="rules-section">
+                    <h4><i class="fas fa-trophy"></i> Difficulty Levels</h4>
+                    <ul>
+                        <li><strong>Easy:</strong> Simple sentences, 60 seconds</li>
+                        <li><strong>Medium:</strong> Complex paragraphs, 90 seconds</li>
+                        <li><strong>Hard:</strong> Technical content, 120 seconds</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal-popup" id="helpModal">
+        <div class="modal-popup-content">
+            <div class="modal-popup-header">
+                <h3><i class="fas fa-question-circle"></i> Help & Tips</h3>
+                <button class="close-modal-popup" data-modal="helpModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-popup-body">
+                <div class="help-section">
+                    <h4><i class="fas fa-keyboard"></i> Typing Tips</h4>
+                    <ul>
+                        <li>Keep your fingers on the home row (ASDF and JKL;)</li>
+                        <li>Look at the screen, not the keyboard</li>
+                        <li>Maintain a steady rhythm - speed comes with practice</li>
+                        <li>Take breaks every 15-20 minutes to avoid fatigue</li>
+                        <li>Focus on accuracy first, then gradually increase speed</li>
+                    </ul>
+                </div>
+                <div class="help-section">
+                    <h4><i class="fas fa-lightbulb"></i> Features</h4>
+                    <ul>
+                        <li><strong>Profile:</strong> Track your progress and achievements</li>
+                        <li><strong>Leaderboard:</strong> Compete with other players</li>
+                        <li><strong>Custom Mode:</strong> Practice with your own text</li>
+                        <li><strong>Dark/Light Theme:</strong> Choose your preferred visual style</li>
+                        <li><strong>Sound Effects:</strong> Toggle audio feedback</li>
+                    </ul>
+                </div>
+                <div class="help-section">
+                    <h4><i class="fas fa-life-ring"></i> Troubleshooting</h4>
+                    <ul>
+                        <li>Stats not saving? Make sure you're logged in</li>
+                        <li>Game not starting? Check your browser console (F12)</li>
+                        <li>Need to reset? Logout and login again</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-popup" id="settingsModal">
+        <div class="modal-popup-content settings-modal">
+            <div class="modal-popup-header">
+                <h3><i class="fas fa-cog"></i> Settings</h3>
+                <button class="close-modal-popup" data-modal="settingsModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-popup-body">
+                <!-- General Settings -->
+                <div class="settings-category">
+                    <h4 class="settings-category-title">
+                        <i class="fas fa-desktop"></i> General
+                    </h4>
+                    <div class="settings-group">
+                        <div class="setting-item">
+                            <label>
+                                <i class="fas fa-moon"></i> Dark Theme
+                            </label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="settingTheme" checked>
+                                <label for="settingTheme" class="toggle-label"></label>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <i class="fas fa-eye"></i> Show Live Stats
+                            </label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="settingLiveStats" checked>
+                                <label for="settingLiveStats" class="toggle-label"></label>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label for="settingLanguage">
+                                <i class="fas fa-language"></i> Language
+                            </label>
+                            <select id="settingLanguage" class="setting-input">
+                                <option value="en" selected>English</option>
+                                <option value="es">Español</option>
+                                <option value="fr">Français</option>
+                                <option value="de">Deutsch</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sound Settings -->
+                <div class="settings-category">
+                    <h4 class="settings-category-title">
+                        <i class="fas fa-volume-up"></i> Sound Settings
+                    </h4>
+                    <div class="settings-group">
+                        <div class="setting-item">
+                            <label>
+                                <i class="fas fa-volume-high"></i> Sound Effects
+                            </label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="settingSound" checked>
+                                <label for="settingSound" class="toggle-label"></label>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <i class="fas fa-music"></i> Background Music
+                            </label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="settingMusic">
+                                <label for="settingMusic" class="toggle-label"></label>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label for="settingSoundVolume">
+                                <i class="fas fa-sliders-h"></i> Effects Volume
+                            </label>
+                            <input type="range" id="settingSoundVolume" class="setting-range" min="0" max="100" value="80">
+                            <span class="volume-value" id="soundVolumeValue">80%</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="settingMusicVolume">
+                                <i class="fas fa-sliders-h"></i> Music Volume
+                            </label>
+                            <input type="range" id="settingMusicVolume" class="setting-range" min="0" max="100" value="50">
+                            <span class="volume-value" id="musicVolumeValue">50%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gameplay Settings -->
+                <div class="settings-category">
+                    <h4 class="settings-category-title">
+                        <i class="fas fa-gamepad"></i> Gameplay
+                    </h4>
+                    <div class="settings-group">
+                        <div class="setting-item">
+                            <label for="settingDifficulty">
+                                <i class="fas fa-chart-line"></i> Difficulty Level
+                            </label>
+                            <select id="settingDifficulty" class="setting-input">
+                                <option value="easy">Easy</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="settingTimer">
+                                <i class="fas fa-clock"></i> Timer Duration (seconds)
+                            </label>
+                            <input type="number" id="settingTimer" class="setting-input" value="60" min="30" max="300" step="10">
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <i class="fas fa-exclamation-triangle"></i> Show Errors
+                            </label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="settingShowErrors" checked>
+                                <label for="settingShowErrors" class="toggle-label"></label>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <i class="fas fa-forward"></i> Skip Completed Words
+                            </label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="settingSkipWords" checked>
+                                <label for="settingSkipWords" class="toggle-label"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Keyboard Settings -->
+                <div class="settings-category">
+                    <h4 class="settings-category-title">
+                        <i class="fas fa-keyboard"></i> Keyboard Settings
+                    </h4>
+                    <div class="settings-group">
+                        <div class="setting-item">
+                            <label for="settingKeyboardLayout">
+                                <i class="fas fa-grip-horizontal"></i> Keyboard Layout
+                            </label>
+                            <select id="settingKeyboardLayout" class="setting-input">
+                                <option value="qwerty" selected>QWERTY</option>
+                                <option value="dvorak">Dvorak</option>
+                                <option value="colemak">Colemak</option>
+                                <option value="azerty">AZERTY</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <i class="fas fa-hand-pointer"></i> Show Virtual Keyboard
+                            </label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="settingVirtualKeyboard">
+                                <label for="settingVirtualKeyboard" class="toggle-label"></label>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <i class="fas fa-lightbulb"></i> Key Hints
+                            </label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="settingKeyHints" checked>
+                                <label for="settingKeyHints" class="toggle-label"></label>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <i class="fas fa-bell"></i> Error Sound on Mistake
+                            </label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="settingErrorSound" checked>
+                                <label for="settingErrorSound" class="toggle-label"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Log Out Section -->
+                <div class="settings-category logout-section">
+                    <h4 class="settings-category-title">
+                        <i class="fas fa-sign-out-alt"></i> Account
+                    </h4>
+                    <div class="settings-group">
+                        <button class="logout-btn" id="logoutBtn">
+                            <i class="fas fa-sign-out-alt"></i> Log Out
+                        </button>
+                        <p class="logout-description">You will be redirected to the login page</p>
+                    </div>
+                </div>
+
+                <div class="settings-actions">
+                    <button class="save-settings-btn" id="saveSettingsBtn">
+                        <i class="fas fa-save"></i> Save Settings
+                    </button>
+                    <button class="reset-settings-btn" id="resetSettingsBtn">
+                        <i class="fas fa-undo"></i> Reset to Default
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Menu Script -->
+    <script>
+        // Sidebar menu functionality
+        const hamburgerMenu = document.getElementById('hamburgerMenu');
+        const sidebarMenu = document.getElementById('sidebarMenu');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+
+        function openSidebar() {
+            sidebarMenu.classList.add('active');
+            sidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebarMenu() {
+            sidebarMenu.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        hamburgerMenu.addEventListener('click', openSidebar);
+        closeSidebar.addEventListener('click', closeSidebarMenu);
+        sidebarOverlay.addEventListener('click', closeSidebarMenu);
+
+        // Modal functionality
+        const gameRulesBtn = document.getElementById('gameRulesBtn');
+        const helpBtn = document.getElementById('helpBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+
+        gameRulesBtn.addEventListener('click', () => {
+            closeSidebarMenu();
+            document.getElementById('gameRulesModal').classList.add('active');
+        });
+
+        helpBtn.addEventListener('click', () => {
+            closeSidebarMenu();
+            document.getElementById('helpModal').classList.add('active');
+        });
+
+        settingsBtn.addEventListener('click', () => {
+            closeSidebarMenu();
+            // Load current settings into modal before opening
+            loadSettings();
+            document.getElementById('settingsModal').classList.add('active');
+        });
+
+        // Close modal buttons
+        document.querySelectorAll('.close-modal-popup').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const modalId = e.currentTarget.getAttribute('data-modal');
+                document.getElementById(modalId).classList.remove('active');
+            });
+        });
+
+        // Close modal on overlay click
+        document.querySelectorAll('.modal-popup').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        });
+
+        // Volume sliders real-time update
+        const soundVolumeSlider = document.getElementById('settingSoundVolume');
+        const musicVolumeSlider = document.getElementById('settingMusicVolume');
+        const soundVolumeValue = document.getElementById('soundVolumeValue');
+        const musicVolumeValue = document.getElementById('musicVolumeValue');
+
+        soundVolumeSlider.addEventListener('input', (e) => {
+            soundVolumeValue.textContent = e.target.value + '%';
+        });
+
+        musicVolumeSlider.addEventListener('input', (e) => {
+            musicVolumeValue.textContent = e.target.value + '%';
+            // Apply music volume in real-time if backgroundMusic exists
+            if (window.backgroundMusic && window.backgroundMusic.audio) {
+                window.backgroundMusic.audio.volume = e.target.value / 100;
+            }
+        });
+        
+        // Music toggle immediate effect
+        document.getElementById('settingMusic').addEventListener('change', (e) => {
+            if (window.backgroundMusic) {
+                if (e.target.checked) {
+                    window.backgroundMusic.play();
+                    console.log('🎵 Music turned ON');
+                } else {
+                    window.backgroundMusic.pause();
+                    console.log('🔇 Music turned OFF');
+                }
+            }
+        });
+        
+        // Sound toggle immediate feedback
+        document.getElementById('settingSound').addEventListener('change', (e) => {
+            if (window.quickKeysApp) {
+                window.quickKeysApp.settings.sound = e.target.checked;
+                console.log('🔊 Sound effects:', e.target.checked ? 'ON' : 'OFF');
+            }
+        });
+
+        // Save settings
+        document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+            try {
+                console.log('💾 Saving settings...');
+                
+                const settings = {
+                    // General
+                    theme: document.getElementById('settingTheme').checked,
+                    liveStats: document.getElementById('settingLiveStats').checked,
+                    language: document.getElementById('settingLanguage').value,
+                    // Sound
+                    sound: document.getElementById('settingSound').checked,
+                    music: document.getElementById('settingMusic').checked,
+                    soundVolume: parseInt(document.getElementById('settingSoundVolume').value),
+                    musicVolume: parseInt(document.getElementById('settingMusicVolume').value),
+                    // Gameplay
+                    difficulty: document.getElementById('settingDifficulty').value,
+                    timer: parseInt(document.getElementById('settingTimer').value),
+                    showErrors: document.getElementById('settingShowErrors').checked,
+                    skipWords: document.getElementById('settingSkipWords').checked,
+                    // Keyboard
+                    keyboardLayout: document.getElementById('settingKeyboardLayout').value,
+                    virtualKeyboard: document.getElementById('settingVirtualKeyboard').checked,
+                    keyHints: document.getElementById('settingKeyHints').checked,
+                    errorSound: document.getElementById('settingErrorSound').checked
+                };
+
+                console.log('📝 Settings to save:', settings);
+
+                // Save to localStorage
+                localStorage.setItem('quickKeysSettings', JSON.stringify(settings));
+                console.log('✅ Saved to localStorage');
+                
+                // Verify save
+                const verified = localStorage.getItem('quickKeysSettings');
+                console.log('✔️ Verified in localStorage:', JSON.parse(verified));
+            
+            // Apply theme immediately
+            if (settings.theme) {
+                document.body.classList.remove('light-theme');
+                document.documentElement.style.setProperty('--bg-primary', '#0a0a0f');
+                document.documentElement.style.setProperty('--bg-secondary', '#1a1a2e');
+                document.documentElement.style.setProperty('--text-primary', '#ffffff');
+            } else {
+                document.body.classList.add('light-theme');
+                document.documentElement.style.setProperty('--bg-primary', '#f5f5f5');
+                document.documentElement.style.setProperty('--bg-secondary', '#ffffff');
+                document.documentElement.style.setProperty('--text-primary', '#0a0a0f');
+            }
+
+            // Apply music settings
+            if (window.backgroundMusic) {
+                if (settings.music) {
+                    window.backgroundMusic.play();
+                } else {
+                    window.backgroundMusic.pause();
+                }
+                if (window.backgroundMusic.audio) {
+                    window.backgroundMusic.audio.volume = settings.musicVolume / 100;
+                }
+            }
+
+            // Apply to app settings - FIXED TO USE CORRECT REFERENCE
+            if (window.quickKeysApp) {
+                // Update app settings with new values
+                window.quickKeysApp.settings = { 
+                    ...window.quickKeysApp.settings, 
+                    theme: settings.theme ? 'dark' : 'light',
+                    sound: settings.sound,
+                    difficulty: settings.difficulty,
+                    liveStats: settings.liveStats,
+                    showErrors: settings.showErrors,
+                    skipWords: settings.skipWords,
+                    errorSound: settings.errorSound,
+                    timer: settings.timer,
+                    soundVolume: settings.soundVolume,
+                    musicVolume: settings.musicVolume
+                };
+                
+                // Apply sound settings
+                if (window.quickKeysApp.applySoundSettings) {
+                    window.quickKeysApp.applySoundSettings();
+                }
+                
+                // Update UI elements if game is active
+                if (window.quickKeysApp.game) {
+                    // Hide/show error display based on setting
+                    const errorElement = document.getElementById('errors');
+                    if (errorElement && errorElement.parentElement) {
+                        errorElement.parentElement.style.display = settings.showErrors ? 'flex' : 'none';
+                    }
+                }
+                
+                console.log('✅ Settings applied to quickKeysApp:', window.quickKeysApp.settings);
+            } else {
+                console.warn('⚠️ App not initialized yet, settings saved to localStorage only');
+            }
+
+            // Show success toast
+            showSettingsToast('Settings saved successfully!');
+            document.getElementById('settingsModal').classList.remove('active');
+            
+            // Sync nav buttons with new settings
+            syncNavButtons(settings);
+            
+            } catch (error) {
+                console.error('❌ Error saving settings:', error);
+                alert('Error saving settings: ' + error.message);
+            }
+        });
+
+        // Reset settings to default
+        document.getElementById('resetSettingsBtn').addEventListener('click', () => {
+            if (confirm('Reset all settings to default values?')) {
+                const defaultSettings = {
+                    theme: true,
+                    liveStats: true,
+                    language: 'en',
+                    sound: true,
+                    music: false,
+                    soundVolume: 80,
+                    musicVolume: 50,
+                    difficulty: 'medium',
+                    timer: 60,
+                    showErrors: true,
+                    skipWords: true,
+                    keyboardLayout: 'qwerty',
+                    virtualKeyboard: false,
+                    keyHints: true,
+                    errorSound: true
+                };
+                
+                // Save defaults to localStorage
+                localStorage.setItem('quickKeysSettings', JSON.stringify(defaultSettings));
+                
+                // Apply defaults to app - FIXED TO USE CORRECT REFERENCE
+                if (window.quickKeysApp) {
+                    window.quickKeysApp.settings = {
+                        ...window.quickKeysApp.settings,
+                        theme: 'dark',
+                        sound: true,
+                        difficulty: 'medium',
+                        liveStats: true,
+                        showErrors: true,
+                        skipWords: true,
+                        errorSound: true,
+                        timer: 60,
+                        soundVolume: 80,
+                        musicVolume: 50
+                    };
+                }
+                
+                // Apply theme
+                document.body.classList.remove('light-theme');
+                document.documentElement.style.setProperty('--bg-primary', '#0a0a0f');
+                document.documentElement.style.setProperty('--bg-secondary', '#1a1a2e');
+                document.documentElement.style.setProperty('--text-primary', '#ffffff');
+                
+                // Stop music by default
+                if (window.backgroundMusic) {
+                    window.backgroundMusic.pause();
+                }
+                
+                // Reload UI with defaults
+                loadSettings();
+                
+                showSettingsToast('Settings reset to default!');
+                console.log('✅ Settings reset to default');
+            }
+        });
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    // Import and call logout
+                    const { logout } = await import('./auth.js');
+                    await logout();
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    // Fallback: clear storage and redirect
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = 'login.html';
+                }
+            }
+        });
+
+        // Settings toast notification
+        function showSettingsToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'settings-toast';
+            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+        
+        // Sync nav buttons with settings
+        function syncNavButtons(settings) {
+            // Update music button
+            const musicToggle = document.getElementById('music-toggle');
+            const musicIcon = document.getElementById('music-icon');
+            if (musicToggle) {
+                if (settings.music) {
+                    musicToggle.classList.add('active');
+                    musicIcon.style.color = 'var(--accent-primary)';
+                } else {
+                    musicToggle.classList.remove('active');
+                    musicIcon.style.color = '';
+                }
+            }
+            
+            // Update sound button
+            const soundToggle = document.getElementById('sound-toggle');
+            if (soundToggle) {
+                const icon = soundToggle.querySelector('i');
+                if (icon) {
+                    icon.className = settings.sound ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+                }
+            }
+            
+            // Update theme button
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                const icon = themeToggle.querySelector('i');
+                if (icon) {
+                    icon.className = settings.theme ? 'fas fa-moon' : 'fas fa-sun';
+                }
+            }
+            
+            console.log('🔄 Nav buttons synced with settings');
+        }
+
+        // Load settings on page load
+        function loadSettings() {
+            console.log('🔄 Loading settings from localStorage...');
+            const savedSettings = localStorage.getItem('quickKeysSettings');
+            
+            if (savedSettings) {
+                try {
+                    const settings = JSON.parse(savedSettings);
+                    console.log('📂 Found saved settings:', settings);
+                    
+                    // General
+                    document.getElementById('settingTheme').checked = settings.theme !== false;
+                    document.getElementById('settingLiveStats').checked = settings.liveStats !== false;
+                    document.getElementById('settingLanguage').value = settings.language || 'en';
+                    // Sound
+                    document.getElementById('settingSound').checked = settings.sound !== false;
+                    document.getElementById('settingMusic').checked = settings.music || false;
+                    document.getElementById('settingSoundVolume').value = settings.soundVolume || 80;
+                    document.getElementById('settingMusicVolume').value = settings.musicVolume || 50;
+                    soundVolumeValue.textContent = (settings.soundVolume || 80) + '%';
+                    musicVolumeValue.textContent = (settings.musicVolume || 50) + '%';
+                    // Gameplay
+                    document.getElementById('settingDifficulty').value = settings.difficulty || 'medium';
+                    document.getElementById('settingTimer').value = settings.timer || 60;
+                    document.getElementById('settingShowErrors').checked = settings.showErrors !== false;
+                    document.getElementById('settingSkipWords').checked = settings.skipWords !== false;
+                    // Keyboard
+                    document.getElementById('settingKeyboardLayout').value = settings.keyboardLayout || 'qwerty';
+                    document.getElementById('settingVirtualKeyboard').checked = settings.virtualKeyboard || false;
+                    document.getElementById('settingKeyHints').checked = settings.keyHints !== false;
+                    document.getElementById('settingErrorSound').checked = settings.errorSound !== false;
+
+                    // Apply theme
+                    if (settings.theme) {
+                        document.body.classList.remove('light-theme');
+                    } else {
+                        document.body.classList.add('light-theme');
+                    }
+                    
+                    // Sync nav buttons
+                    syncNavButtons(settings);
+                    
+                    console.log('✅ Settings loaded successfully');
+                } catch (error) {
+                    console.error('❌ Error loading settings:', error);
+                }
+            } else {
+                console.log('ℹ️ No saved settings found, using defaults');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            
+            // Integrate with existing nav buttons after a short delay
+            setTimeout(() => {
+                // Sync nav buttons behavior with settings
+                const musicToggleBtn = document.getElementById('music-toggle');
+                const soundToggleBtn = document.getElementById('sound-toggle');
+                const themeToggleBtn = document.getElementById('theme-toggle');
+                
+                // These buttons should update localStorage and settings modal
+                console.log('🔗 Syncing nav buttons with settings system');
+            }, 500);
+        });
+    </script>
 </body>
 </html>

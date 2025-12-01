@@ -36,13 +36,41 @@ class QuickKeysApp {
         this.init();
     }
 
-    init() {
+    async init() {
+        console.log('🚀 QuickKeys initializing...');
+        
+        // Check authentication status first
+        await this.checkAuthStatus();
+        
         this.loadSettings();
         this.loadUserData();
         this.setupEventListeners();
         this.initializeGameComponents();
         this.initializeBackgroundMusic();
         this.showLoadingScreen();
+        
+        // Update UI based on auth status
+        this.updateAuthUI();
+    }
+    
+    async checkAuthStatus() {
+        try {
+            const { getCurrentUser } = await import('../supabase.js');
+            const user = await getCurrentUser();
+            
+            if (user) {
+                console.log('✅ User logged in:', user.email);
+                this.isLoggedIn = true;
+                this.currentUser = user;
+            } else {
+                console.log('👤 Not logged in - using guest mode');
+                this.isLoggedIn = false;
+                this.currentUser = null;
+            }
+        } catch (error) {
+            console.error('Error checking auth status:', error);
+            this.isLoggedIn = false;
+        }
     }
 
     /**
@@ -71,24 +99,75 @@ class QuickKeysApp {
     showLoadingScreen() {
         const loadingScreen = document.getElementById('loading-screen');
         
-        // Simulate loading time
+        // Faster loading - reduced from 2000ms to 800ms
         setTimeout(() => {
             loadingScreen.classList.add('hidden');
             setTimeout(() => {
                 loadingScreen.style.display = 'none';
                 this.showScreen('home');
-            }, 500);
-        }, 2000);
+                
+                // Show welcome notification on first visit
+                const hasVisited = localStorage.getItem('quickkeys-visited');
+                if (!hasVisited) {
+                    setTimeout(() => {
+                        this.showNotification('Welcome to QuickKeys! Select a mode to start typing.', 'success');
+                        localStorage.setItem('quickkeys-visited', 'true');
+                    }, 300);
+                }
+            }, 200);
+        }, 800);
     }
 
     // Settings Management
     loadSettings() {
-        const savedSettings = localStorage.getItem('quickkeys-settings');
+        const savedSettings = localStorage.getItem('quickKeysSettings');
         if (savedSettings) {
-            this.settings = { ...this.settings, ...JSON.parse(savedSettings) };
+            const parsed = JSON.parse(savedSettings);
+            this.settings = { 
+                ...this.settings, 
+                ...parsed,
+                theme: parsed.theme ? 'dark' : 'light' // Convert boolean to string
+            };
+            console.log('✅ Settings loaded from localStorage:', this.settings);
+        } else {
+            // Default settings
+            this.settings = {
+                theme: 'dark',
+                liveStats: true,
+                language: 'en',
+                sound: true,
+                music: false,
+                soundVolume: 80,
+                musicVolume: 50,
+                difficulty: 'medium',
+                timer: 60,
+                showErrors: true,
+                skipWords: true,
+                keyboardLayout: 'qwerty',
+                virtualKeyboard: false,
+                keyHints: true,
+                errorSound: true
+            };
+            console.log('✅ Default settings initialized:', this.settings);
         }
         this.applyTheme();
         this.applySoundSettings();
+        this.applyGameplaySettings();
+    }
+
+    applyGameplaySettings() {
+        // Apply error display visibility
+        const errorStatItem = document.querySelector('#errors')?.parentElement;
+        if (errorStatItem) {
+            errorStatItem.style.display = this.settings.showErrors !== false ? 'flex' : 'none';
+        }
+        
+        console.log('🎮 Gameplay settings applied:', {
+            difficulty: this.settings.difficulty,
+            timer: this.settings.timer,
+            showErrors: this.settings.showErrors,
+            liveStats: this.settings.liveStats
+        });
     }
 
     saveSettings() {
@@ -123,6 +202,101 @@ class QuickKeysApp {
             this.user = { ...this.user, ...JSON.parse(savedUser) };
         }
         this.updateProfileDisplay();
+        
+        // Load Supabase profile data if available
+        this.loadSupabaseProfile();
+    }
+
+    async loadSupabaseProfile() {
+        try {
+            // Import Supabase functions
+            const { getCurrentUser, getProfile } = await import('../supabase.js');
+            
+            const user = await getCurrentUser();
+            if (!user) {
+                console.log('No user logged in');
+                return;
+            }
+            
+            const profile = await getProfile(user.id);
+            
+            if (profile) {
+                console.log('✅ Loaded profile:', profile);
+                
+                // Update username everywhere
+                const username = profile.username || user.email.split('@')[0];
+                
+                // Update all profile name elements
+                const profileNameElements = document.querySelectorAll('#profile-name, .profile-username, .user-name');
+                profileNameElements.forEach(el => {
+                    if (el) el.textContent = username;
+                });
+                
+                // Update profile stats
+                const avgWpmEl = document.getElementById('avg-wpm');
+                const bestAccuracyEl = document.getElementById('best-accuracy');
+                const totalGamesEl = document.getElementById('total-games');
+                
+                if (avgWpmEl) {
+                    avgWpmEl.textContent = profile.best_wpm || 0;
+                }
+                if (bestAccuracyEl) {
+                    bestAccuracyEl.textContent = (profile.average_accuracy || 0).toFixed(1) + '%';
+                }
+                if (totalGamesEl) {
+                    totalGamesEl.textContent = profile.total_tests || 0;
+                }
+                
+                // Store in app user object for local access
+                this.user.name = username;
+                this.user.stats.bestWPM = profile.best_wpm || 0;
+                this.user.stats.avgAccuracy = profile.average_accuracy || 0;
+                this.user.stats.totalGames = profile.total_tests || 0;
+                this.user.stats.totalTime = profile.total_time || 0;
+                
+                // Update local storage
+                this.saveUserData();
+            }
+        } catch (error) {
+            console.error('Error loading Supabase profile:', error);
+        }
+    }
+    
+    // Public method to refresh profile (can be called from anywhere)
+    async refreshProfile() {
+        console.log('🔄 Manually refreshing profile...');
+        await this.loadSupabaseProfile();
+    }
+    
+    // Handle user logout
+    async handleLogout() {
+        try {
+            console.log('🚪 Logging out...');
+            
+            // Sign out from Supabase
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error('❌ Logout error:', error);
+                alert('Failed to logout. Please try again.');
+                return;
+            }
+            
+            // Clear local storage
+            localStorage.removeItem('quickkeys-user');
+            localStorage.removeItem('quickKeysSettings');
+            
+            // Reset auth state
+            this.isLoggedIn = false;
+            this.currentUser = null;
+            
+            console.log('✅ Logged out successfully');
+            
+            // Redirect to login page
+            window.location.href = 'login.html';
+        } catch (error) {
+            console.error('❌ Logout failed:', error);
+            alert('An error occurred during logout.');
+        }
     }
 
     saveUserData() {
@@ -145,6 +319,46 @@ class QuickKeysApp {
                 element.textContent = value;
             }
         });
+        
+        // Update UI based on login status
+        this.updateAuthUI();
+    }
+    
+    updateAuthUI() {
+        const logoutBtn = document.getElementById('logout-btn');
+        const profileLink = document.querySelector('a[href="profile.html"]');
+        const profileNameEl = document.getElementById('profile-name');
+        
+        if (this.isLoggedIn) {
+            // Show logout button
+            if (logoutBtn) logoutBtn.style.display = 'block';
+            
+            // Update profile name display
+            if (profileNameEl && this.user.name) {
+                profileNameEl.textContent = this.user.name;
+                profileNameEl.style.display = 'block';
+            }
+        } else {
+            // Hide logout button for guests
+            if (logoutBtn) logoutBtn.style.display = 'none';
+            
+            // Show guest indicator
+            if (profileNameEl) {
+                profileNameEl.textContent = 'Guest Mode';
+                profileNameEl.style.display = 'block';
+            }
+            
+            // Redirect profile link to login
+            if (profileLink) {
+                profileLink.addEventListener('click', (e) => {
+                    if (!this.isLoggedIn) {
+                        e.preventDefault();
+                        alert('Please login to view your profile.');
+                        window.location.href = 'login.html';
+                    }
+                });
+            }
+        }
     }
 
     formatTime(seconds) {
@@ -168,18 +382,20 @@ class QuickKeysApp {
             currentScreenEl.classList.remove('active');
         }
 
-        // Show new screen
+        // Show new screen immediately
         const newScreenEl = document.getElementById(`${screenId}-screen`);
         if (newScreenEl) {
             newScreenEl.classList.add('active');
             this.currentScreen = screenId;
         }
 
-        // Update navigation
+        // Update navigation immediately
         this.updateNavigation();
 
-        // Screen-specific initialization
-        this.initializeScreen(screenId);
+        // Screen-specific initialization - run immediately
+        requestAnimationFrame(() => {
+            this.initializeScreen(screenId);
+        });
     }
 
     updateNavigation() {
@@ -448,12 +664,15 @@ class QuickKeysApp {
 
     // Event Listeners
     setupEventListeners() {
-        // Navigation
+        // Navigation - use delegation for better performance
         document.addEventListener('click', (e) => {
-            if (e.target.dataset.screen) {
-                this.showScreen(e.target.dataset.screen);
+            const target = e.target.closest('[data-screen]');
+            if (target && target.dataset.screen) {
+                e.preventDefault();
+                this.showScreen(target.dataset.screen);
+                return;
             }
-        });
+        }, { passive: false });
 
         // Theme toggle
         document.getElementById('theme-toggle').addEventListener('click', () => {
@@ -472,6 +691,38 @@ class QuickKeysApp {
             }
         });
 
+        // Help toggle
+        document.getElementById('help-toggle')?.addEventListener('click', () => {
+            const helpModal = document.getElementById('help-modal');
+            if (helpModal) {
+                helpModal.style.display = 'flex';
+                setTimeout(() => helpModal.classList.add('active'), 10);
+            }
+        });
+        
+        // Logout button
+        document.getElementById('logout-btn')?.addEventListener('click', async () => {
+            await this.handleLogout();
+        });
+
+        // Close help modal
+        document.getElementById('close-help')?.addEventListener('click', () => {
+            const helpModal = document.getElementById('help-modal');
+            if (helpModal) {
+                helpModal.classList.remove('active');
+                setTimeout(() => helpModal.style.display = 'none', 300);
+            }
+        });
+
+        // Click outside to close help modal
+        document.getElementById('help-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'help-modal') {
+                const helpModal = document.getElementById('help-modal');
+                helpModal.classList.remove('active');
+                setTimeout(() => helpModal.style.display = 'none', 300);
+            }
+        });
+
         // Difficulty selection
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('difficulty-btn')) {
@@ -484,45 +735,66 @@ class QuickKeysApp {
             }
         });
 
-        // Game controls
+        // Game controls - optimized for instant response
         document.addEventListener('click', (e) => {
-            if (e.target.id === 'start-btn' || e.target.parentElement?.id === 'start-btn') {
-                // Check if we have active custom game data
-                if (this.activeCustomText && this.activeCustomSettings) {
-                    console.log('Main: Start button clicked for custom game');
-                    // Start the custom game with stored text and settings
-                    if (this.game) {
-                        this.game.startCustomGame(this.activeCustomText, this.activeCustomSettings);
-                    }
-                } else if (this.game && this.game.isCustomGame) {
-                    console.log('Main: Start button clicked during active custom game');
-                    // Custom game is already started, this button should stop the game
-                    if (this.game.gameStarted) {
+            const clickedElement = e.target.closest('#start-btn, #submit-btn, #retry-btn');
+            
+            if (clickedElement) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const btnId = clickedElement.id;
+                
+                if (btnId === 'start-btn') {
+                    // Check if game is currently running
+                    if (this.game && this.game.gameStarted && !this.game.gameEnded) {
                         this.game.endGame('stopped');
+                        return;
                     }
-                } else {
-                    console.log('Main: Start button clicked - starting regular game');
+                    
+                    // Check if we have active custom game data
+                    if (this.activeCustomText && this.activeCustomSettings) {
+                        if (this.game) {
+                            this.game.startCustomGame(this.activeCustomText, this.activeCustomSettings);
+                        }
+                    } else if (this.game && this.game.isCustomGame) {
+                        if (this.game.gameStarted) {
+                        this.game.endGame('stopped');
+                        }
+                    } else {
+                        if (this.game) {
+                            this.game.startGame();
+                        }
+                    }
+                } else if (btnId === 'submit-btn') {
                     if (this.game) {
-                        this.game.startGame();
+                        this.game.submitGame();
+                    }
+                } else if (btnId === 'retry-btn') {
+                    if (this.game) {
+                        this.game.resetGame();
                     }
                 }
-            } else if (e.target.id === 'submit-btn' || e.target.parentElement?.id === 'submit-btn') {
-                this.submitGame();
-            } else if (e.target.id === 'retry-btn' || e.target.parentElement?.id === 'retry-btn') {
-                this.resetGame();
+                return;
             }
-        });
+        }, { passive: false });
 
-        // Custom mode
+        // Custom mode - optimized
         document.addEventListener('click', (e) => {
-            if (e.target.id === 'start-custom' || e.target.parentElement?.id === 'start-custom') {
-                this.startCustomGame();
-            } else if (e.target.id === 'save-custom' || e.target.parentElement?.id === 'save-custom') {
-                this.saveCustomChallenge();
-            } else if (e.target.id === 'share-custom' || e.target.parentElement?.id === 'share-custom') {
-                this.shareCustomChallenge();
+            const customBtn = e.target.closest('#start-custom, #save-custom, #share-custom');
+            if (customBtn) {
+                e.preventDefault();
+                const btnId = customBtn.id;
+                if (btnId === 'start-custom') {
+                    this.startCustomGame();
+                } else if (btnId === 'save-custom') {
+                    this.saveCustomChallenge();
+                } else if (btnId === 'share-custom') {
+                    this.shareCustomChallenge();
+                }
+                return;
             }
-        });
+        }, { passive: false });
 
         // Challenge actions
         document.addEventListener('click', (e) => {
@@ -549,25 +821,67 @@ class QuickKeysApp {
             }
         });
 
-        // Modal controls
+        // Modal controls - optimized
         document.addEventListener('click', (e) => {
-            if (e.target.id === 'close-results' || e.target.parentElement?.id === 'close-results') {
-                this.closeResultsModal();
-            } else if (e.target.id === 'retry-btn' || e.target.parentElement?.id === 'retry-btn') {
-                this.retryGame();
-            } else if (e.target.id === 'home-btn' || e.target.parentElement?.id === 'home-btn') {
-                this.goHome();
-            } else if (e.target.id === 'share-btn' || e.target.parentElement?.id === 'share-btn') {
-                this.shareScore();
+            const modalBtn = e.target.closest('#close-results, #home-btn, #share-btn');
+            if (modalBtn) {
+                e.preventDefault();
+                const btnId = modalBtn.id;
+                if (btnId === 'close-results') {
+                    this.closeResultsModal();
+                } else if (btnId === 'home-btn') {
+                    this.goHome();
+                } else if (btnId === 'share-btn') {
+                    this.shareScore();
+                }
+                return;
             }
-        });
+        }, { passive: false });
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            // ESC to go home
             if (e.key === 'Escape') {
                 if (this.currentScreen !== 'home') {
-                    this.showScreen('home');
+                    const modal = document.getElementById('results-modal');
+                    if (modal && modal.classList.contains('active')) {
+                        this.closeResultsModal();
+                    } else {
+                        this.showScreen('home');
+                    }
                 }
+            }
+            
+            // Ctrl+R or R to retry (when results modal is open)
+            if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey) {
+                const modal = document.getElementById('results-modal');
+                if (modal && modal.classList.contains('active')) {
+                    e.preventDefault();
+                    this.retryGame();
+                }
+            }
+            
+            // Enter to start game (when on single player screen and game not started)
+            if (e.key === 'Enter' && this.currentScreen === 'single-player') {
+                if (this.game && !this.game.gameStarted) {
+                    e.preventDefault();
+                    const startBtn = document.getElementById('start-btn');
+                    if (startBtn && !startBtn.disabled) {
+                        startBtn.click();
+                    }
+                }
+            }
+            
+            // S for sound toggle (Ctrl+S)
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                document.getElementById('sound-toggle').click();
+            }
+            
+            // T for theme toggle (Ctrl+T)
+            if (e.ctrlKey && e.key === 't') {
+                e.preventDefault();
+                document.getElementById('theme-toggle').click();
             }
         });
     }
@@ -682,28 +996,112 @@ class QuickKeysApp {
     // Modal Methods
     showResultsModal(results) {
         const modal = document.getElementById('results-modal');
+        if (!modal) {
+            console.error('Results modal not found!');
+            return;
+        }
         
-        document.getElementById('final-wpm').textContent = results.wpm;
-        document.getElementById('final-accuracy').textContent = results.accuracy + '%';
-        document.getElementById('final-errors').textContent = results.errors;
-        document.getElementById('final-time').textContent = results.time + 's';
+        // Update modal content
+        const wpmEl = document.getElementById('final-wpm');
+        const accuracyEl = document.getElementById('final-accuracy');
+        const errorsEl = document.getElementById('final-errors');
+        const timeEl = document.getElementById('final-time');
         
-        modal.classList.add('active');
+        if (wpmEl) wpmEl.textContent = results.wpm;
+        if (accuracyEl) accuracyEl.textContent = results.accuracy + '%';
+        if (errorsEl) errorsEl.textContent = results.errors;
+        if (timeEl) timeEl.textContent = results.time + 's';
+        
+        // Update username in modal if element exists
+        const usernameEl = modal.querySelector('.result-username');
+        if (usernameEl && this.user.name) {
+            usernameEl.textContent = this.user.name;
+        }
+        
+        // Update modal title based on completion reason
+        const modalTitle = modal.querySelector('.modal-title');
+        if (modalTitle) {
+            if (results.reason === 'completed') {
+                modalTitle.textContent = '🎉 Excellent Work!';
+            } else if (results.reason === 'submitted') {
+                modalTitle.textContent = '✅ Game Submitted!';
+            } else if (results.reason === 'timeout') {
+                modalTitle.textContent = '⏰ Time\'s Up!';
+            } else if (results.reason === 'stopped') {
+                modalTitle.textContent = '⏹️ Game Stopped';
+            }
+        }
+        
+        // Show modal immediately
+        modal.style.display = 'flex';
+        requestAnimationFrame(() => {
+            modal.classList.add('active');
+        });
+        
+        // Play completion sound
+        if (results.reason === 'completed') {
+            this.playSound('complete');
+        }
+        
+        // Show login prompt for guest users
+        if (!this.isLoggedIn) {
+            this.showGuestLoginPrompt(modal);
+        }
+    }
+    
+    showGuestLoginPrompt(modal) {
+        // Check if prompt already exists
+        let promptEl = modal.querySelector('.guest-login-prompt');
+        if (promptEl) {
+            promptEl.style.display = 'block';
+            return;
+        }
+        
+        // Create login prompt element
+        promptEl = document.createElement('div');
+        promptEl.className = 'guest-login-prompt';
+        promptEl.innerHTML = `
+            <div class="prompt-icon">💾</div>
+            <p class="prompt-text">Sign in to save your progress and track your stats!</p>
+            <button class="prompt-login-btn" onclick="window.location.href='login.html'">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </button>
+        `;
+        
+        // Insert before action buttons
+        const actionButtons = modal.querySelector('.modal-buttons');
+        if (actionButtons) {
+            actionButtons.parentNode.insertBefore(promptEl, actionButtons);
+        }
     }
 
     closeResultsModal() {
         const modal = document.getElementById('results-modal');
+        if (!modal) return;
+        
         modal.classList.remove('active');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 200);
     }
 
     retryGame() {
         this.closeResultsModal();
-        this.resetGame();
+        if (this.game) {
+            this.game.resetGame();
+            // Auto-start immediately
+            requestAnimationFrame(() => {
+                this.game.startGame();
+            });
+        }
     }
 
     goHome() {
         this.closeResultsModal();
         this.showScreen('home');
+        if (this.game) {
+            this.game.resetGame();
+        }
     }
 
     shareScore() {
@@ -728,14 +1126,88 @@ class QuickKeysApp {
     playSound(type) {
         if (!this.settings.sound) return;
         
-        // In a real app, you would load and play actual sound files
-        // For now, we'll just log the sound type
-        console.log(`Playing sound: ${type}`);
+        // Create audio context if it doesn't exist
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        const ctx = this.audioContext;
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        // Different sounds for different actions
+        switch(type) {
+            case 'keypress':
+                oscillator.frequency.value = 800;
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + 0.05);
+                break;
+            case 'start':
+                oscillator.frequency.value = 523.25; // C5
+                gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + 0.3);
+                break;
+            case 'complete':
+                // Success sound - ascending notes
+                [523.25, 659.25, 783.99].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.1 + 0.2);
+                    osc.start(ctx.currentTime + i * 0.1);
+                    osc.stop(ctx.currentTime + i * 0.1 + 0.2);
+                });
+                break;
+            case 'timeout':
+            case 'stop':
+                oscillator.frequency.value = 200;
+                gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + 0.4);
+                break;
+            case 'click':
+                oscillator.frequency.value = 600;
+                gainNode.gain.setValueAtTime(0.15, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + 0.1);
+                break;
+            default:
+                oscillator.frequency.value = 440;
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + 0.1);
+        }
     }
 
     showNotification(message, type = 'info') {
+        // Remove existing notifications
+        const existing = document.querySelectorAll('.quick-notification');
+        existing.forEach(el => el.remove());
+        
         // Create a simple notification
         const notification = document.createElement('div');
+        notification.className = 'quick-notification';
+        
+        const icons = {
+            success: 'fa-check-circle',
+            error: 'fa-exclamation-circle',
+            warning: 'fa-exclamation-triangle',
+            info: 'fa-info-circle'
+        };
+        
         const colors = {
             success: 'var(--success)',
             error: 'var(--danger)',
@@ -745,25 +1217,39 @@ class QuickKeysApp {
         
         notification.style.cssText = `
             position: fixed;
-            top: 20px;
+            top: 80px;
             right: 20px;
-            background: ${colors[type] || colors.info};
+            background: var(--surface-secondary);
+            border-left: 4px solid ${colors[type] || colors.info};
             color: var(--text-primary);
             padding: 1rem 1.5rem;
             border-radius: var(--border-radius);
-            z-index: 9999;
-            animation: slideIn 0.3s ease;
-            max-width: 300px;
+            z-index: 10000;
+            animation: slideInRight 0.3s ease;
+            max-width: 350px;
             box-shadow: var(--shadow-dark);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Inter', sans-serif;
         `;
-        notification.textContent = message;
+        
+        notification.innerHTML = `
+            <i class=\"fas ${icons[type] || icons.info}\" style=\"color: ${colors[type] || colors.info}; font-size: 1.2rem;\"></i>
+            <span style=\"flex: 1;\">${message}</span>
+        `;
         
         document.body.appendChild(notification);
         
+        // Play notification sound
+        this.playSound('click');
+        
         setTimeout(() => {
-            notification.style.animation = 'slideOut 0.3s ease';
+            notification.style.animation = 'slideOutRight 0.3s ease';
             setTimeout(() => {
-                document.body.removeChild(notification);
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
             }, 300);
         }, 3000);
     }
@@ -844,6 +1330,22 @@ class QuickKeysApp {
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.quickKeysApp = new QuickKeysApp();
+    
+    // Refresh profile when window gains focus (user returns from profile page)
+    window.addEventListener('focus', () => {
+        if (window.quickKeysApp) {
+            console.log('🔄 Window focused - refreshing profile data...');
+            window.quickKeysApp.loadSupabaseProfile();
+        }
+    });
+    
+    // Also refresh on page show (handles back button)
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted && window.quickKeysApp) {
+            console.log('🔄 Page shown from cache - refreshing profile data...');
+            window.quickKeysApp.loadSupabaseProfile();
+        }
+    });
 });
 
 // Handle shared challenges from URL

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - QuickKeys</title>
+    <link rel="stylesheet" href="auth.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-background" id="particleContainer"></div>
+        
+        <div class="auth-card">
+            <div class="auth-logo">
+                <h1>QuickKeys</h1>
+                <p>Create your account and start improving your typing speed!</p>
+            </div>
+
+            <form class="auth-form" id="signupForm">
+                <div id="errorContainer"></div>
+
+                <div class="form-group">
+                    <label class="form-label" for="email">
+                        <i class="fas fa-envelope"></i>
+                        Email Address
+                    </label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        class="form-input" 
+                        placeholder="your@email.com"
+                        required
+                        autocomplete="email"
+                    >
+                    <i class="fas fa-check-circle input-icon"></i>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">
+                        <i class="fas fa-lock"></i>
+                        Password
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        class="form-input" 
+                        placeholder="Create a strong password"
+                        required
+                        autocomplete="new-password"
+                    >
+                    <div class="password-strength" id="passwordStrength" style="display: none;">
+                        <div class="password-strength-bar"></div>
+                    </div>
+                    <div class="password-strength-text" id="passwordStrengthText"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">
+                        <i class="fas fa-lock"></i>
+                        Confirm Password
+                    </label>
+                    <input 
+                        type="password" 
+                        id="confirmPassword" 
+                        class="form-input" 
+                        placeholder="Re-enter your password"
+                        required
+                        autocomplete="new-password"
+                    >
+                    <i class="fas fa-check-circle input-icon"></i>
+                </div>
+
+                <button type="submit" class="auth-btn" id="signupBtn">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Create Account</span>
+                </button>
+            </form>
+
+            <div class="auth-link">
+                Already have an account? 
+                <a href="login.html">Login</a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { register, validateEmail, checkPasswordStrength } from './auth.js';
+
+        const signupForm = document.getElementById('signupForm');
+        const signupBtn = document.getElementById('signupBtn');
+        const errorContainer = document.getElementById('errorContainer');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const passwordStrengthBar = passwordStrength.querySelector('.password-strength-bar');
+
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            // Clear previous errors
+            errorContainer.innerHTML = '';
+
+            // Validation
+            if (!validateEmail(email)) {
+                showError('Please enter a valid email address');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('Password must be at least 6 characters');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+
+            // Show loading state
+            signupBtn.classList.add('loading');
+            signupBtn.disabled = true;
+            signupBtn.innerHTML = '<i class="fas fa-spinner"></i><span>Creating Account...</span>';
+
+            // Attempt registration
+            const result = await register(email, password);
+
+            if (result.success) {
+                showSuccess('Account created successfully! Redirecting to login...');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            } else {
+                signupBtn.classList.remove('loading');
+                signupBtn.disabled = false;
+                signupBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Create Account</span>';
+                showError(result.error || 'Registration failed. Please try again.');
+            }
+        });
+
+        function showError(message) {
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+        }
+
+        function showSuccess(message) {
+            errorContainer.innerHTML = `
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+        }
+
+        // Check if already logged in
+        import { checkAuth } from './auth.js';
+        checkAuth().then(isAuthenticated => {
+            if (isAuthenticated) {
+                window.location.href = 'index.html';
+            }
+        });
+
+        // Create floating particles
+        function createParticles() {
+            const container = document.getElementById('particleContainer');
+            const particleCount = 20;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                container.appendChild(particle);
+            }
+        }
+        createParticles();
+
+        // Enhanced password strength checker
+        const passwordStrengthText = document.getElementById('passwordStrengthText');
+        
+        passwordInput.addEventListener('input', () => {
+            const password = passwordInput.value;
+            if (password.length > 0) {
+                passwordStrength.style.display = 'block';
+                const strength = checkPasswordStrength(password);
+                passwordStrengthBar.className = 'password-strength-bar ' + strength;
+                passwordStrengthText.className = 'password-strength-text ' + strength;
+                
+                if (strength === 'weak') {
+                    passwordStrengthText.textContent = '⚠️ Weak - Add more characters';
+                    passwordInput.classList.add('invalid');
+                    passwordInput.classList.remove('valid');
+                } else if (strength === 'medium') {
+                    passwordStrengthText.textContent = '🔶 Medium - Add symbols or numbers';
+                    passwordInput.classList.remove('invalid', 'valid');
+                } else {
+                    passwordStrengthText.textContent = '✓ Strong password';
+                    passwordInput.classList.add('valid');
+                    passwordInput.classList.remove('invalid');
+                }
+            } else {
+                passwordStrength.style.display = 'none';
+                passwordStrengthText.textContent = '';
+                passwordInput.classList.remove('valid', 'invalid');
+            }
+        });
+
+        // Add input validation feedback
+        const emailInput = document.getElementById('email');
+
+        emailInput.addEventListener('input', () => {
+            if (emailInput.value.length === 0) {
+                emailInput.classList.remove('valid', 'invalid');
+            } else if (validateEmail(emailInput.value)) {
+                emailInput.classList.remove('invalid');
+                emailInput.classList.add('valid');
+            } else {
+                emailInput.classList.remove('valid');
+                emailInput.classList.add('invalid');
+            }
+        });
+
+        confirmPasswordInput.addEventListener('input', () => {
+            if (confirmPasswordInput.value.length === 0) {
+                confirmPasswordInput.classList.remove('valid', 'invalid');
+            } else if (confirmPasswordInput.value === passwordInput.value) {
+                confirmPasswordInput.classList.remove('invalid');
+                confirmPasswordInput.classList.add('valid');
+            } else {
+                confirmPasswordInput.classList.remove('valid');
+                confirmPasswordInput.classList.add('invalid');
+            }
+        });
+
+        // Add ripple effect on button click
+        signupBtn.addEventListener('click', function(e) {
+            const ripple = document.createElement('span');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            ripple.classList.add('ripple');
+            
+            this.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        });
+    </script>
+</body>
+</html>

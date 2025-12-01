@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - QuickKeys</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="profile.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-spinner">
+            <i class="fas fa-circle-notch fa-spin"></i>
+        </div>
+        <p>Loading profile...</p>
+    </div>
+
+    <!-- Profile Container -->
+    <div id="profileContainer" class="profile-container" style="display: none;">
+        <!-- Header -->
+        <header class="profile-header">
+            <div class="header-left">
+                <a href="index.html" class="back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Game</span>
+                </a>
+            </div>
+            <h1 class="profile-title">
+                <i class="fas fa-user-circle"></i>
+                My Profile
+            </h1>
+            <div class="header-right">
+                <button id="logoutBtn" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Profile Overview Card -->
+        <section class="profile-overview">
+            <div class="profile-card">
+                <div class="profile-avatar-container">
+                    <div class="profile-avatar">
+                        <img id="avatarImage" src="" alt="Avatar" style="display: none;">
+                        <i id="avatarIcon" class="fas fa-user"></i>
+                    </div>
+                    <button id="changeAvatarBtn" class="change-avatar-btn">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                    <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+                </div>
+                <div class="profile-info">
+                    <h2 id="profileUsername">Loading...</h2>
+                    <p id="profileEmail">email@example.com</p>
+                    <p id="profileBio">No bio yet</p>
+                    <button id="editProfileBtn" class="edit-profile-btn">
+                        <i class="fas fa-edit"></i>
+                        Edit Profile
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Grid -->
+        <section class="stats-section">
+            <h3 class="section-title">
+                <i class="fas fa-chart-line"></i>
+                Statistics
+            </h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Best WPM</div>
+                        <div class="stat-value" id="statBestWpm">0</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar" id="progressWpm"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon accuracy">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Avg Accuracy</div>
+                        <div class="stat-value" id="statAvgAccuracy">0%</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar accuracy" id="progressAccuracy"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon tests">
+                        <i class="fas fa-keyboard"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Tests</div>
+                        <div class="stat-value" id="statTotalTests">0</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar tests" id="progressTests"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon time">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Time</div>
+                        <div class="stat-value" id="statTotalTime">0m</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar time" id="progressTime"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <h3 class="section-title">
+                <i class="fas fa-chart-area"></i>
+                Performance Over Time
+            </h3>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h4 class="chart-title">WPM History</h4>
+                    <canvas id="wpmChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4 class="chart-title">Accuracy History</h4>
+                    <canvas id="accuracyChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Activity Section -->
+        <section class="activity-section">
+            <h3 class="section-title">
+                <i class="fas fa-history"></i>
+                Recent Activity
+            </h3>
+            <div id="activityList" class="activity-list">
+                <!-- Activity items will be dynamically inserted -->
+            </div>
+        </section>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-user-edit"></i>
+                    Edit Profile
+                </h3>
+                <button id="closeModalBtn" class="close-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editUsername">
+                        <i class="fas fa-user"></i>
+                        Username
+                    </label>
+                    <input type="text" id="editUsername" class="form-input" placeholder="Enter username" maxlength="30">
+                </div>
+                <div class="form-group">
+                    <label for="editBio">
+                        <i class="fas fa-quote-left"></i>
+                        Bio
+                    </label>
+                    <textarea id="editBio" class="form-input" placeholder="Tell us about yourself..." maxlength="200"></textarea>
+                    <span id="bioCharCount" class="char-count">0/200</span>
+                </div>
+                <div id="modalError" class="error-message" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelBtn" class="btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button id="saveProfileBtn" class="btn-primary">
+                    <i class="fas fa-save"></i>
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Success!</span>
+    </div>
+
+    <!-- Profile Script -->
+    <script type="module" src="profile.js"></script>
+</body>
+</html>

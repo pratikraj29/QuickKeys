@@ -141,7 +141,7 @@ class UIEnhancements {
     }
 
     setupScrollAnimations() {
-        // Intersection Observer for scroll animations
+        
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach(entry => {
@@ -195,7 +195,7 @@ class UIEnhancements {
         
         ripple.style.cssText = `
             position: absolute;
-            width: ${size}px;
+            width: ${size}px;gt4t
             height: ${size}px;
             left: ${x}px;
             top: ${y}px;

@@ -87,7 +87,7 @@ class TypingGame {
         
         this.app.playSound('start');
     }
-type 
+
     startCustomGame(customText, customSettings) {
         console.log('Game: Starting custom game with:', { text: customText?.length + ' chars', settings: customSettings });
         
@@ -379,7 +379,14 @@ type
         return chars.map((char, index) => {
             let className = '';
             if (index < this.currentPosition) {
-                className = this.isCharacterCorrect(index) ? 'correct' : 'incorrect';
+                // Check if showErrors setting is enabled
+                const showErrors = this.app.settings.showErrors !== false;
+                if (this.isCharacterCorrect(index)) {
+                    className = 'correct';
+                } else {
+                    // Only show error highlighting if showErrors is enabled
+                    className = showErrors ? 'incorrect' : '';
+                }
             } else if (index === this.currentPosition) {
                 className = 'current';
             }
@@ -398,24 +405,34 @@ type
     setupGameInput() {
         const typingInput = document.getElementById('typing-input');
         
-        // Remove existing event listeners
-        typingInput.replaceWith(typingInput.cloneNode(true));
-        const newTypingInput = document.getElementById('typing-input');
+        // Remove existing event listeners by cloning
+        const newTypingInput = typingInput.cloneNode(true);
+        typingInput.parentNode.replaceChild(newTypingInput, typingInput);
         
         newTypingInput.addEventListener('input', (e) => {
             if (!this.gameStarted || this.gameEnded) return;
             
             this.handleTyping(e);
-            this.app.playSound('keypress');
+            
+            // Play keypress sound (throttled)
+            if (this.app.settings.sound && (!this.lastKeypressSound || Date.now() - this.lastKeypressSound > 50)) {
+                this.app.playSound('keypress');
+                this.lastKeypressSound = Date.now();
+            }
         });
 
         newTypingInput.addEventListener('keydown', (e) => {
             if (!this.gameStarted || this.gameEnded) return;
             
             // Prevent certain keys
-            if (e.key === 'Tab' || (e.ctrlKey && (e.key === 'a' || e.key === 'v' || e.key === 'c'))) {
+            if (e.key === 'Tab' || (e.ctrlKey && (e.key === 'a' || e.key === 'v' || e.key === 'c' || e.key === 'x'))) {
                 e.preventDefault();
             }
+        });
+
+        newTypingInput.addEventListener('paste', (e) => {
+            e.preventDefault();
+            this.app.showNotification('Pasting is not allowed!', 'warning');
         });
     }
 
@@ -433,6 +450,12 @@ type
                 this.correctCharacters++;
             } else {
                 this.errors++;
+                
+                // Play error sound if enabled in settings
+                if (this.app.settings.errorSound && (!this.lastErrorSound || Date.now() - this.lastErrorSound > 200)) {
+                    this.app.playSound('error');
+                    this.lastErrorSound = Date.now();
+                }
             }
         }
         
@@ -445,7 +468,11 @@ type
         // Update display
         this.updateTextDisplay();
         this.calculateStats();
-        this.app.updateGameStatsDisplay();
+        
+        // Update stats display only if liveStats is enabled
+        if (this.app.settings.liveStats !== false) {
+            this.app.updateGameStatsDisplay();
+        }
         
         // Update progress information
         this.updateProgressInfo();
@@ -483,19 +510,29 @@ type
     }
 
     startTimer() {
+        // Get saved timer setting from app
+        const savedSettings = localStorage.getItem('quickKeysSettings');
+        let customTimer = null;
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            customTimer = settings.timer;
+        }
+        
         // Set timer based on difficulty and text length
         const difficulty = this.app.settings.difficulty;
         const textLength = this.currentText.length;
         
-        let baseTime = 60; // Default 60 seconds
+        let baseTime = customTimer || 60; // Use custom timer or default 60 seconds
         
-        // Adjust time based on difficulty and text length
-        if (difficulty === 'easy') {
-            baseTime = Math.max(30, Math.ceil(textLength / 8)); // ~8 chars per second for easy
-        } else if (difficulty === 'medium') {
-            baseTime = Math.max(45, Math.ceil(textLength / 6)); // ~6 chars per second for medium
-        } else if (difficulty === 'hard') {
-            baseTime = Math.max(60, Math.ceil(textLength / 4)); // ~4 chars per second for hard
+        // If no custom timer, adjust time based on difficulty and text length
+        if (!customTimer) {
+            if (difficulty === 'easy') {
+                baseTime = Math.max(30, Math.ceil(textLength / 8)); // ~8 chars per second for easy
+            } else if (difficulty === 'medium') {
+                baseTime = Math.max(45, Math.ceil(textLength / 6)); // ~6 chars per second for medium
+            } else if (difficulty === 'hard') {
+                baseTime = Math.max(60, Math.ceil(textLength / 4)); // ~4 chars per second for hard
+            }
         }
         
         this.app.gameStats.timeRemaining = baseTime;
@@ -584,10 +621,140 @@ type
         // Store result in Firebase if it's a custom game
         this.storeGameResult(reason);
         
+        // Save stats to Supabase
+        this.saveStatsToSupabase();
+        
         // Show results modal
         this.showGameResults(reason);
         
         this.app.playSound(reason === 'completed' ? 'complete' : 'timeout');
+    }
+
+    async saveStatsToSupabase() {
+        try {
+            // Import Supabase functions
+            const { getCurrentUser, saveGameStats } = await import('../supabase.js');
+            
+            const user = await getCurrentUser();
+            if (!user) {
+                console.log('👤 Not logged in - stats saved locally only');
+                return;
+            }
+
+            const wpm = Math.round(this.app.gameStats.wpm);
+            const accuracy = parseFloat(this.app.gameStats.accuracy.toFixed(2));
+            const durationSeconds = Math.floor((Date.now() - this.startTime) / 1000);
+            
+            console.log('💾 Saving to Supabase:', { wpm, accuracy, duration: durationSeconds });
+            
+            await saveGameStats(user.id, wpm, accuracy, durationSeconds);
+            
+            console.log('✅ Stats saved successfully!');
+            
+            // Refresh profile in main app
+            if (this.app && this.app.refreshProfile) {
+                await this.app.refreshProfile();
+            }
+            
+            // Show success toast
+            this.showSaveToast();
+        } catch (error) {
+            console.error('❌ Error saving stats to Supabase:', error);
+            // Show error toast but don't block game flow
+            this.showErrorToast();
+        }
+    }
+
+    showSaveToast() {
+        // Create a small toast notification
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success, #50fa7b);
+            color: var(--bg-primary, #0a0a0f);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        `;
+        toast.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Stats saved to cloud!';
+        document.body.appendChild(toast);
+        
+        // Animate in
+        setTimeout(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+        }, 10);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+    
+    showErrorToast() {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--danger, #ff5555);
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        `;
+        toast.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed to save stats';
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+        }, 10);
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    showSaveToast() {
+        // Create a small toast notification
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success, #50fa7b);
+            color: var(--bg-primary, #0a0a0f);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            animation: slideInRight 0.3s ease;
+        `;
+        toast.innerHTML = '<i class="fas fa-check-circle"></i> Saved to Profile!';
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 2500);
     }
 
     submitGame() {

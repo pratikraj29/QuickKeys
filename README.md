@@ -55,7 +55,7 @@ A beautiful, modern web-based typing speed game with real-time multiplayer funct
 ### Prerequisites
 - Modern web browser (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
 - Supabase account for database features
-- Node.js (optional, for multiplayer server)
+- Node.js  for multiplayer server
 
 ### Installation
 

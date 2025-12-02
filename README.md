@@ -1,7 +1,8 @@
 # QuickKeys - Modern Typing Speed Game 🚀
 
 A beautiful, modern web-based typing speed game with real-time multiplayer functionality, Supabase database integration, and comprehensive features for improving typing skills.
-![License: HTML5](https://img.shields.io/badge/License-MIT-green.svg)
+
+[ HTML5](https://img.shields.io/badge/License-MIT-green.svg)
 
 ## ✨ Features
 

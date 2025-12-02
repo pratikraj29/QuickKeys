@@ -2,7 +2,6 @@
 
 A beautiful, modern web-based typing speed game with real-time multiplayer functionality, Supabase database integration, and comprehensive features for improving typing skills.
 
-[ HTML5](https://img.shields.io/badge/License-MIT-green.svg)
 
 ## ✨ Features
 
